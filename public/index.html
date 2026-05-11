@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bảng kê Doanh thu CSKH</title>
+  <title>CSKH Portal</title>
+  <link rel="icon" href="https://iili.io/F66acRs.png" type="image/png">
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Sử dụng Firebase SDK Module để ổn định hơn -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -13,11 +13,18 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; margin: 0; overflow: hidden; }
     
-    .grid-wrap { height: calc(100vh - 120px); overflow: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; }
+    /* Portal UI Components */
+    .portal-sidebar { width: 280px; background: #0f172a; color: white; height: 100vh; flex-shrink: 0; transition: all 0.3s; }
+    .portal-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; transition: all 0.3s; cursor: pointer; position: relative; overflow: hidden; }
+    .portal-card:hover { transform: translateY(-5px); border-color: #3b82f6; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    
+    /* Grid Styling */
+    .grid-wrap { height: calc(100vh - 140px); overflow: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; }
     .grid-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 2400px; table-layout: fixed; }
     .grid-table th { position: sticky; top: 0; background: #0f172a; color: #f8fafc; z-index: 30; font-size: 11px; padding: 14px; text-transform: uppercase; border-right: 1px solid #334155; }
     .grid-table td { border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; height: 44px; padding: 0; }
     
+    /* Input Styling */
     .cell-input { width: 100%; height: 100%; border: none; padding: 0 12px; font-size: 13px; outline: none; background: transparent; }
     .cell-input:focus { background: #fff !important; box-shadow: inset 0 0 0 2px #3b82f6; z-index: 40; position: relative; }
     .cell-readonly { background: #f1f5f9 !important; color: #94a3b8; cursor: not-allowed; }
@@ -29,74 +36,167 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     
     #custom-modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-    .menu-card { background: white; border-radius: 24px; padding: 32px; text-align: center; cursor: pointer; border: 1px solid #e2e8f0; transition: all 0.2s; }
-    .menu-card:hover { transform: translateY(-4px); border-color: #3b82f6; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    
+    /* Animations */
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
-  <div id="loader"><div class="spinner"></div><p class="mt-4 font-bold text-slate-700" id="loader-text">Đang xử lý...</p></div>
+  <!-- Loader -->
+  <div id="loader"><div class="spinner"></div><p class="mt-4 font-bold text-slate-700" id="loader-text">Đang tải Portal...</p></div>
 
-  <div id="custom-modal"><div class="bg-white p-8 rounded-[24px] max-w-sm w-full text-center shadow-2xl"><h3 id="modal-title" class="text-xl font-bold mb-2">Thông báo</h3><p id="modal-msg" class="text-slate-500 mb-6"></p><button onclick="closeModal()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">Đóng</button></div></div>
+  <!-- Modal -->
+  <div id="custom-modal">
+    <div class="bg-white p-8 rounded-[24px] max-w-sm w-full text-center shadow-2xl">
+      <h3 id="modal-title" class="text-xl font-bold mb-2">Thông báo</h3>
+      <p id="modal-msg" class="text-slate-500 mb-6"></p>
+      <button onclick="closeModal()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:opacity-90">Đóng</button>
+    </div>
+  </div>
 
+  <!-- Toast -->
   <div id="toast-container" class="fixed bottom-6 right-6 z-[3000] flex flex-col gap-2"></div>
+  
   <datalist id="emp-list"></datalist>
 
-  <div id="app" class="h-screen flex flex-col">
-    <!-- Màn hình Đăng nhập -->
-    <div id="scr-auth" class="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center p-4">
-      <div class="w-full max-w-[360px] bg-white p-10 rounded-[32px] shadow-xl border">
-        <h1 class="text-2xl font-bold text-center mb-8 text-slate-900">Xác thực Hệ thống</h1>
-        <div class="space-y-4">
-          <input type="text" id="a-id" class="w-full px-5 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500 font-bold" placeholder="Mã nhân viên">
-          <div id="a-p-box" class="hidden"><input type="password" id="a-p" class="w-full px-5 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500 font-bold" placeholder="Mật mã"></div>
-          <button onclick="doAuth()" class="w-full bg-blue-600 py-4 rounded-2xl text-white font-bold hover:bg-blue-700 shadow-lg shadow-blue-100">Tiếp tục</button>
-        </div>
+  <div id="app" class="h-screen flex">
+    <!-- Sidebar (Hidden by default) -->
+    <aside id="app-sidebar" class="hidden portal-sidebar flex flex-col p-6">
+      <div class="flex items-center gap-3 mb-10">
+        <img src="https://iili.io/F66acRs.png" class="w-8 h-8" alt="Logo">
+        <span class="font-black text-xl tracking-tighter">CSKH PORTAL</span>
       </div>
-    </div>
-
-    <!-- Header -->
-    <header id="app-header" class="hidden bg-white px-6 py-3 border-b flex items-center justify-between z-40 shadow-sm">
-      <div class="flex items-center gap-4 cursor-pointer" onclick="goHome()">
-        <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-lg" id="u-c">?</div>
-        <div>
-          <div class="font-bold text-slate-900 text-sm" id="u-n">---</div>
-          <div class="text-[9px] font-bold text-blue-600 uppercase" id="u-m">---</div>
+      <nav class="space-y-2 flex-1">
+        <button onclick="goHome()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 transition-all font-semibold text-sm">
+          <span>🏠</span> Trang chủ Portal
+        </button>
+        <button onclick="openFeature('REVENUE')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 transition-all font-semibold text-sm">
+          <span>💵</span> Kê khai Doanh thu
+        </button>
+        <div id="side-menu-personnel" class="hidden">
+            <button onclick="openFeature('PERSONNEL')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 transition-all font-semibold text-sm text-emerald-400">
+              <span>👥</span> Quản lý Nhân sự
+            </button>
         </div>
-      </div>
-      
-      <div class="flex items-center gap-4">
-        <div id="admin-date-filter" class="hidden bg-slate-100 p-1 rounded-lg flex items-center border">
-            <span class="text-[9px] font-extrabold px-3 text-slate-500">XEM NGÀY:</span>
-            <input type="date" id="view-date" onchange="changeDate()" class="bg-white border-none rounded-md px-3 py-1.5 text-xs font-bold outline-none">
-        </div>
-
-        <div id="revenue-actions" class="hidden"><button onclick="addRow()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-blue-700">Thêm dòng</button></div>
-        
-        <div id="personnel-actions" class="hidden">
-          <button onclick="syncFromSheets()" class="bg-[#059669] text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#047857] flex items-center gap-2">
-            Đồng bộ từ Sheets
-          </button>
-        </div>
-        
-        <button onclick="doLogout()" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </nav>
+      <div class="pt-6 border-t border-slate-800">
+        <button onclick="doLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-900/30 text-red-400 transition-all font-semibold text-sm">
+          <span>🚪</span> Đăng xuất
         </button>
       </div>
-    </header>
+    </aside>
 
-    <!-- Dashboard -->
-    <main id="scr-home" class="hidden flex-1 p-8 flex items-center justify-center bg-slate-50">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-        <div onclick="openFeature('REVENUE')" class="menu-card"><div class="text-3xl mb-4">💵</div><h2 class="font-bold text-lg mb-1">Doanh thu</h2><p class="text-xs text-slate-400">Nhập bảng kê hằng ngày</p></div>
-        <div id="menu-personnel" onclick="openFeature('PERSONNEL')" class="hidden menu-card"><div class="text-3xl mb-4">👥</div><h2 class="font-bold text-lg mb-1 text-emerald-600">Nhân sự</h2><p class="text-xs text-slate-400">Quản lý & Đồng bộ</p></div>
-      </div>
-    </main>
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Auth Screen -->
+        <div id="scr-auth" class="fixed inset-0 bg-slate-50 z-[100] flex items-center justify-center p-4">
+          <div class="w-full max-w-[380px] bg-white p-12 rounded-[40px] shadow-2xl border flex flex-col items-center">
+            <img src="https://iili.io/F66acRs.png" class="w-16 h-16 mb-6 shadow-lg rounded-2xl" alt="Logo">
+            <h1 class="text-2xl font-black text-center mb-1 text-slate-900 tracking-tight">CSKH PORTAL</h1>
+            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-10">Internal Access Only</p>
+            <div class="space-y-4 w-full">
+              <input type="text" id="a-id" class="w-full px-6 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500 font-bold transition-all" placeholder="Mã nhân viên">
+              <div id="a-p-box" class="hidden"><input type="password" id="a-p" class="w-full px-6 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500 font-bold" placeholder="Mật mã xác thực"></div>
+              <button onclick="doAuth()" class="w-full bg-blue-600 py-4 rounded-2xl text-white font-bold hover:bg-blue-700 shadow-xl shadow-blue-100 active:scale-95 transition-all">Truy cập Portal</button>
+            </div>
+          </div>
+        </div>
 
-    <!-- Grid -->
-    <main id="scr-revenue" class="hidden flex-1 p-4"><div class="grid-wrap"><table class="grid-table"><thead><tr id="head-rev"></tr></thead><tbody id="body-rev"></tbody></table></div></main>
+        <!-- Header -->
+        <header id="app-header" class="hidden bg-white/80 backdrop-blur-md px-8 py-4 border-b flex items-center justify-between z-40">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black" id="u-c">?</div>
+            <div>
+              <div class="font-bold text-slate-900 text-sm leading-tight" id="u-n">---</div>
+              <div class="text-[10px] font-bold text-blue-600 uppercase tracking-tighter" id="u-m">---</div>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-4">
+            <div id="admin-date-filter" class="hidden bg-slate-100 p-1 rounded-lg flex items-center border">
+                <span class="text-[9px] font-extrabold px-3 text-slate-500">DỮ LIỆU NGÀY:</span>
+                <input type="date" id="view-date" onchange="changeDate()" class="bg-white border-none rounded-md px-3 py-1.5 text-xs font-bold outline-none">
+            </div>
 
-    <!-- Personnel -->
-    <main id="scr-personnel" class="hidden flex-1 p-4 overflow-auto"><div class="bg-white rounded-xl border shadow-sm overflow-hidden"><table class="w-full text-left"><thead class="bg-slate-900 text-white text-[10px] uppercase font-bold sticky top-0"><tr><th class="p-4">Mã NV</th><th class="p-4">Họ Tên</th><th class="p-4">Phòng / Nhóm</th><th class="p-4 text-center">Quyền</th></tr></thead><tbody id="body-per"></tbody></table></div></main>
+            <div id="revenue-actions" class="hidden">
+              <button onclick="addRow()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-100">Thêm dòng kê khai</button>
+            </div>
+            
+            <div id="personnel-actions" class="hidden">
+              <button onclick="syncEmployees()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700">Đồng bộ Sheets</button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Main Dashboard (Portal Home) -->
+        <main id="scr-home" class="hidden flex-1 p-10 overflow-auto bg-slate-50">
+          <div class="max-w-5xl mx-auto">
+            <div class="mb-10">
+                <h2 class="text-3xl font-black text-slate-900 tracking-tight">Chào buổi sáng, <span id="u-fname" class="text-blue-600">...</span></h2>
+                <p class="text-slate-500 font-medium">Chào mừng bạn đến với trung tâm điều hành nội bộ.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Feature: Revenue -->
+              <div onclick="openFeature('REVENUE')" class="portal-card p-8 group">
+                <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all">💵</div>
+                <h3 class="font-bold text-lg mb-2">Doanh thu</h3>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed">Phân hệ kê khai bảng tiền mặt và doanh thu dược hàng ngày của các nhóm.</p>
+                <div class="mt-6 flex items-center text-blue-600 font-bold text-[10px] uppercase tracking-widest">
+                    Bắt đầu làm việc ➜
+                </div>
+              </div>
+
+              <!-- Feature: Personnel (Conditional) -->
+              <div id="card-personnel" onclick="openFeature('PERSONNEL')" class="hidden portal-card p-8 group">
+                <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all">👥</div>
+                <h3 class="font-bold text-lg mb-2">Nhân sự</h3>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed">Quản lý danh sách nhân viên, phân quyền truy cập và đồng bộ dữ liệu từ hệ thống gốc.</p>
+                <div class="mt-6 flex items-center text-emerald-600 font-bold text-[10px] uppercase tracking-widest">
+                    Quản lý hệ thống ➜
+                </div>
+              </div>
+
+              <!-- Future Feature Placeholder -->
+              <div class="portal-card p-8 border-dashed bg-slate-50 flex flex-col items-center justify-center text-center opacity-60">
+                <div class="text-2xl mb-2 text-slate-300">🔒</div>
+                <h3 class="font-bold text-slate-400">Ứng dụng sắp ra mắt</h3>
+                <p class="text-[10px] text-slate-300 uppercase font-bold tracking-tighter mt-1">Coming Soon</p>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <!-- Sub-Feature: Revenue -->
+        <main id="scr-revenue" class="hidden flex-1 p-6 fade-in">
+          <div class="flex items-center gap-2 mb-4">
+              <button onclick="goHome()" class="p-2 hover:bg-slate-200 rounded-lg text-sm">⬅</button>
+              <h2 class="font-black text-lg">BẢNG KÊ DOANH THU</h2>
+          </div>
+          <div class="grid-wrap">
+            <table class="grid-table">
+              <thead><tr id="head-rev"></tr></thead>
+              <tbody id="body-rev"></tbody>
+            </table>
+          </div>
+        </main>
+
+        <!-- Sub-Feature: Personnel -->
+        <main id="scr-personnel" class="hidden flex-1 p-6 overflow-auto fade-in">
+          <div class="flex items-center gap-2 mb-4">
+              <button onclick="goHome()" class="p-2 hover:bg-slate-200 rounded-lg text-sm">⬅</button>
+              <h2 class="font-black text-lg">QUẢN LÝ NHÂN SỰ</h2>
+          </div>
+          <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+            <table class="w-full text-left">
+              <thead class="bg-slate-900 text-white text-[10px] uppercase font-bold sticky top-0">
+                <tr><th class="p-5">Mã NV</th><th class="p-5">Họ Tên</th><th class="p-5">Phòng / Nhóm</th><th class="p-5 text-center">Quyền</th></tr>
+              </thead>
+              <tbody id="body-per"></tbody>
+            </table>
+          </div>
+        </main>
+    </div>
   </div>
 
   <script>
@@ -109,33 +209,30 @@
     let ud = null, step = 1, allEmps = [], unsubscribeRevenue = null;
     let viewDate = new Date().toLocaleDateString('vi-VN');
 
-    // Chèn URL Web App của bạn ở đây để đồng bộ
-    const GAS_WEB_APP_URL = "URL_WEB_APP_CUA_BAN_O_DAY";
-
     const cols = [
       {n:"Nhóm", k:"group", ro:true, w:"150px"}, {n:"Ngày", k:"date", ro:true, w:"110px"}, 
-      {n:"NV Nộp", k:"submitter", type:"emp", w:"220px"}, {n:"NV Thu ngân", k:"cashier", ro:true, w:"220px"}, 
-      {n:"Lần", k:"turn", type:"sel", w:"110px"}, {n:"500k", k:"m500", num:true, w:"70px"}, {n:"200k", k:"m200", num:true, w:"70px"}, 
-      {n:"100k", k:"m100", num:true, w:"70px"}, {n:"50k", k:"m50", num:true, w:"70px"}, {n:"20k", k:"m20", num:true, w:"70px"}, 
-      {n:"10k", k:"m10", num:true, w:"70px"}, {n:"5k", k:"m5", num:true, w:"70px"}, {n:"2k", k:"m2", num:true, w:"70px"}, 
-      {n:"1k", k:"m1", num:true, w:"70px"}, {n:"500đ", k:"m500d", num:true, w:"70px"}, {n:"Tổng", k:"total", ro:true, num:true, tot:true, w:"130px"},
-      {n:"DT Dược", k:"pharma", num:true, w:"100px"}, {n:"Kết Sổ", k:"closeTime", type:"time", w:"90px"}, 
-      {n:"Giờ nộp", k:"submitTime", type:"time", w:"90px"}, {n:"Ghi chú", k:"note", w:"250px"}, 
-      {n:"Số Thẻ", k:"card", w:"110px"}, {n:"Số CK", k:"ck", w:"110px"}
+      {n:"NV Nộp", k:"submitter", type:"emp", w:"240px"}, {n:"NV Thu ngân", k:"cashier", ro:true, w:"240px"}, 
+      {n:"Lần", k:"turn", type:"sel", w:"110px"}, {n:"500k", k:"m500", num:true, w:"80px"}, {n:"200k", k:"m200", num:true, w:"80px"}, 
+      {n:"100k", k:"m100", num:true, w:"80px"}, {n:"50k", k:"m50", num:true, w:"80px"}, {n:"20k", k:"m20", num:true, w:"80px"}, 
+      {n:"10k", k:"m10", num:true, w:"80px"}, {n:"5k", k:"m5", num:true, w:"80px"}, {n:"2k", k:"m2", num:true, w:"80px"}, 
+      {n:"1k", k:"m1", num:true, w:"80px"}, {n:"500đ", k:"m500d", num:true, w:"80px"}, {n:"Tổng", k:"total", ro:true, num:true, tot:true, w:"150px"},
+      {n:"DT Dược", k:"pharma", num:true, w:"120px"}, {n:"Kết Sổ", k:"closeTime", type:"time", w:"100px"}, 
+      {n:"Giờ nộp", k:"submitTime", type:"time", w:"100px"}, {n:"Ghi chú", k:"note", w:"300px"}, 
+      {n:"Số Thẻ", k:"card", w:"120px"}, {n:"Số CK", k:"ck", w:"120px"}
     ];
 
-    function toggleLoader(s, t) { document.getElementById('loader-text').innerText = t || "Đang xử lý..."; document.getElementById('loader').style.display = s ? 'flex' : 'none'; }
+    function toggleLoader(s, t) { document.getElementById('loader-text').innerText = t || "Đang tải..."; document.getElementById('loader').style.display = s ? 'flex' : 'none'; }
     function showModal(t, m) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-msg').innerText = m; document.getElementById('custom-modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('custom-modal').style.display = 'none'; }
     function notify(m, s) { 
-      const t = document.createElement('div'); t.className = `p-3 px-4 rounded-xl shadow-lg border-l-4 ${s?'border-emerald-500 bg-white':'border-red-500 bg-white'} text-xs font-bold flex items-center gap-2`;
+      const t = document.createElement('div'); t.className = `p-4 rounded-2xl shadow-xl border-l-4 ${s?'border-emerald-500 bg-white':'border-red-500 bg-white'} text-sm font-bold flex items-center gap-2`;
       t.innerHTML = `<span>${s?'✅':'❌'}</span><span>${m}</span>`;
       document.getElementById('toast-container').appendChild(t); setTimeout(()=>t.remove(), 3000);
     }
 
     async function doAuth() {
       const id = document.getElementById('a-id').value.trim(); if(!id) return;
-      toggleLoader(true, "Đang kết nối Cloud...");
+      toggleLoader(true, "Đang định danh...");
       try {
         const snap = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('employees').get();
         const rawData = snap.docs.map(d => d.data());
@@ -145,7 +242,7 @@
 
         const found = allEmps.find(e => e.employeeId === id || e.employeeId.endsWith('.' + id));
         if (step === 1) {
-          toggleLoader(false); if (!found) return showModal('Từ chối', 'Không tìm thấy thông tin nhân viên.');
+          toggleLoader(false); if (!found) return showModal('Lỗi', 'Mã nhân viên không có quyền truy cập Portal.');
           ud = found; document.getElementById('a-id').value = found.employeeId;
           document.getElementById('a-id').setAttribute('readonly', true);
           document.getElementById('a-p-box').classList.remove('hidden'); step = 2; document.getElementById('a-p').focus();
@@ -154,19 +251,26 @@
             await auth.signInAnonymously();
             document.getElementById('emp-list').innerHTML = allEmps.map(e => `<option value="${e.employeeId} - ${e.fullName}">`).join('');
             startApp();
-          } else { toggleLoader(false); notify('Mật mã sai', false); }
+          } else { toggleLoader(false); notify('Sai mật mã xác thực', false); }
         }
-      } catch (e) { toggleLoader(false); showModal('Lỗi', 'Không thể kết nối Firebase. Kiểm tra mạng.'); }
+      } catch (e) { toggleLoader(false); showModal('Lỗi hệ thống', 'Không thể kết nối đến Portal.'); }
     }
 
     function startApp() {
       toggleLoader(false); document.getElementById('scr-auth').style.display = 'none';
       document.getElementById('app-header').classList.remove('hidden');
-      document.getElementById('u-n').innerText = ud.fullName; document.getElementById('u-c').innerText = ud.fullName.charAt(0);
+      document.getElementById('app-sidebar').classList.remove('hidden');
+      document.getElementById('u-n').innerText = ud.fullName; 
+      document.getElementById('u-fname').innerText = ud.fullName.split(' ').pop();
+      document.getElementById('u-c').innerText = ud.fullName.charAt(0);
       document.getElementById('u-m').innerText = `${ud.unit} • ${ud.group}`;
       
       const isPrivileged = ud.isAdmin || (ud.role && (ud.role.includes("Cấp 3") || ud.role.includes("Phó Giám Đốc") || ud.role.includes("Admin")));
-      if (isPrivileged) document.getElementById('menu-personnel').classList.remove('hidden');
+      if (isPrivileged) {
+          document.getElementById('side-menu-personnel').classList.remove('hidden');
+          document.getElementById('card-personnel').classList.remove('hidden');
+      }
+      
       if (ud.isAdmin) {
           document.getElementById('admin-date-filter').classList.remove('hidden');
           document.getElementById('view-date').value = new Date().toISOString().split('T')[0];
@@ -243,16 +347,12 @@
       const b = document.getElementById('body-per'); b.innerHTML = '';
       allEmps.sort((a,b)=>a.fullName.localeCompare(b.fullName)).forEach(e => {
         const tr = document.createElement('tr'); tr.className = "border-b hover:bg-slate-50 transition-colors";
-        tr.innerHTML = `<td class="p-4 text-sm font-bold text-slate-700">${e.employeeId}</td><td class="p-4 text-sm font-medium">${e.fullName}</td><td class="p-4 text-xs text-slate-500">${e.unit} / ${e.group}</td><td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-[9px] font-black tracking-tight ${e.isAdmin?'bg-red-50 text-red-600':'bg-blue-50 text-blue-600'}">${e.isAdmin?'QUẢN TRỊ VIÊN':'NHÂN VIÊN'}</span></td>`;
+        tr.innerHTML = `<td class="p-5 text-sm font-bold text-slate-700">${e.employeeId}</td><td class="p-5 text-sm font-medium">${e.fullName}</td><td class="p-5 text-xs text-slate-500 font-semibold">${e.unit} / ${e.group}</td><td class="p-5 text-center"><span class="px-2.5 py-1 rounded-full text-[9px] font-black tracking-tight ${e.isAdmin?'bg-red-50 text-red-600':'bg-blue-50 text-blue-600'}">${e.isAdmin?'ADMIN':'USER'}</span></td>`;
         b.appendChild(tr);
       });
     }
 
-    async function syncFromSheets() {
-      // Vì trên Firebase Hosting không có google.script.run
-      // Bạn nên sử dụng cơ chế thủ công hoặc gọi Web App URL (GAS) bằng fetch
-      showModal("Hướng dẫn", "Trên Hosting, việc đồng bộ cần được thực hiện qua Web App URL của Apps Script. Vui lòng liên hệ Admin để thực hiện.");
-    }
+    function syncEmployees() { showModal("Hướng dẫn", "Vui lòng thực hiện đồng bộ từ thanh menu 'Hệ thống doanh thu' trong Google Sheets hoặc cập nhật thông tin qua GitHub."); }
 
     function localCalc(id) {
       const denos = [500000, 200000, 100000, 50000, 20000, 10000, 5000, 2000, 1000, 500];
@@ -273,25 +373,30 @@
         keys.forEach((k, i) => { const val = k === f ? v : (document.querySelector(`[data-id="${id}"][data-key="${k}"]`)?.value || 0); tot += (parseInt(val) || 0) * denos[i]; });
         up.total = tot;
       }
-      try { await ref.update(up); } catch (e) { notify('Lỗi lưu', false); }
+      try { await ref.update(up); } catch (e) { notify('Lỗi lưu dữ liệu', false); }
     }
 
     async function addRow() {
       try {
         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('revenue').add({
           group: ud.group, date: viewDate, cashier: `${ud.employeeId} - ${ud.fullName}`, createdAt: Date.now(), total: 0
-        }); notify('Đã thêm dòng', true);
-      } catch (e) { notify('Lỗi thêm', false); }
+        }); notify('Đã thêm dòng kê khai mới', true);
+      } catch (e) { notify('Lỗi thêm dòng', false); }
     }
 
     function doLogout() { 
       auth.signOut().then(() => {
-          ud = null; step = 1;
+          ud = null; step = 1; viewDate = new Date().toLocaleDateString('vi-VN');
           document.getElementById('scr-auth').style.display = 'flex';
           document.getElementById('app-header').classList.add('hidden');
+          document.getElementById('app-sidebar').classList.add('hidden');
           document.querySelectorAll('main').forEach(m => m.classList.add('hidden'));
-          notify("Đã đăng xuất", true);
-      });
+          document.getElementById('a-id').value = '';
+          document.getElementById('a-id').removeAttribute('readonly');
+          document.getElementById('a-p').value = '';
+          document.getElementById('a-p-box').classList.add('hidden');
+          notify("Đã đăng xuất Portal", true);
+      }).catch(e => location.reload()); 
     }
   </script>
 </body>
