@@ -15,8 +15,8 @@
     
     /* Portal UI Components */
     .portal-sidebar { width: 280px; background: #0f172a; color: white; height: 100vh; flex-shrink: 0; transition: all 0.3s; }
-    .portal-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; transition: all 0.3s; cursor: pointer; position: relative; overflow: hidden; }
-    .portal-card:hover { transform: translateY(-5px); border-color: #3b82f6; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    .portal-card { background: white; border-radius: 24px; border: 1px solid #e2e8f0; transition: all 0.3s; cursor: pointer; position: relative; overflow: hidden; }
+    .portal-card:hover { transform: translateY(-5px); border-color: #3b82f6; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
     
     /* Grid Styling */
     .grid-wrap { height: calc(100vh - 140px); overflow: auto; background: white; border-radius: 16px; border: 1px solid #e2e8f0; }
@@ -37,16 +37,13 @@
     
     #custom-modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
     
-    /* Animations */
     .fade-in { animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
-  <!-- Loader -->
   <div id="loader"><div class="spinner"></div><p class="mt-4 font-bold text-slate-700" id="loader-text">Đang tải Portal...</p></div>
 
-  <!-- Modal -->
   <div id="custom-modal">
     <div class="bg-white p-8 rounded-[24px] max-w-sm w-full text-center shadow-2xl">
       <h3 id="modal-title" class="text-xl font-bold mb-2">Thông báo</h3>
@@ -55,57 +52,55 @@
     </div>
   </div>
 
-  <!-- Toast -->
   <div id="toast-container" class="fixed bottom-6 right-6 z-[3000] flex flex-col gap-2"></div>
-  
   <datalist id="emp-list"></datalist>
 
   <div id="app" class="h-screen flex">
-    <!-- Sidebar (Hidden by default) -->
-    <aside id="app-sidebar" class="hidden portal-sidebar flex flex-col p-6">
-      <div class="flex items-center gap-3 mb-10">
-        <img src="https://iili.io/F66acRs.png" class="w-8 h-8" alt="Logo">
+    <!-- Sidebar -->
+    <aside id="app-sidebar" class="hidden portal-sidebar flex flex-col p-6 shadow-2xl">
+      <div class="flex items-center gap-3 mb-10 px-2">
+        <img src="https://iili.io/F66acRs.png" class="w-9 h-9" alt="Logo">
         <span class="font-black text-xl tracking-tighter">CSKH PORTAL</span>
       </div>
       <nav class="space-y-2 flex-1">
         <button onclick="goHome()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 transition-all font-semibold text-sm">
-          <span>🏠</span> Trang chủ Portal
+          <span class="text-lg">🏠</span> Trang chủ Portal
         </button>
         <button onclick="openFeature('REVENUE')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 transition-all font-semibold text-sm">
-          <span>💵</span> Kê khai Doanh thu
+          <span class="text-lg">💵</span> Kê khai Doanh thu
         </button>
         <div id="side-menu-personnel" class="hidden">
             <button onclick="openFeature('PERSONNEL')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 transition-all font-semibold text-sm text-emerald-400">
-              <span>👥</span> Quản lý Nhân sự
+              <span class="text-lg">👥</span> Quản lý Nhân sự
             </button>
         </div>
       </nav>
       <div class="pt-6 border-t border-slate-800">
         <button onclick="doLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-900/30 text-red-400 transition-all font-semibold text-sm">
-          <span>🚪</span> Đăng xuất
+          <span class="text-lg">🚪</span> Đăng xuất
         </button>
       </div>
     </aside>
 
     <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Auth Screen -->
+        <!-- Màn hình Đăng nhập -->
         <div id="scr-auth" class="fixed inset-0 bg-slate-50 z-[100] flex items-center justify-center p-4">
           <div class="w-full max-w-[380px] bg-white p-12 rounded-[40px] shadow-2xl border flex flex-col items-center">
-            <img src="https://iili.io/F66acRs.png" class="w-16 h-16 mb-6 shadow-lg rounded-2xl" alt="Logo">
+            <img src="https://iili.io/F66acRs.png" class="w-16 h-16 mb-6 shadow-xl rounded-2xl" alt="Logo">
             <h1 class="text-2xl font-black text-center mb-1 text-slate-900 tracking-tight">CSKH PORTAL</h1>
-            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-10">Internal Access Only</p>
+            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-10">Hệ thống điều hành nội bộ</p>
             <div class="space-y-4 w-full">
-              <input type="text" id="a-id" class="w-full px-6 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500 font-bold transition-all" placeholder="Mã nhân viên">
+              <input type="text" id="a-id" class="w-full px-6 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500 font-bold transition-all shadow-sm" placeholder="Mã nhân viên">
               <div id="a-p-box" class="hidden"><input type="password" id="a-p" class="w-full px-6 py-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500 font-bold" placeholder="Mật mã xác thực"></div>
-              <button onclick="doAuth()" class="w-full bg-blue-600 py-4 rounded-2xl text-white font-bold hover:bg-blue-700 shadow-xl shadow-blue-100 active:scale-95 transition-all">Truy cập Portal</button>
+              <button onclick="doAuth()" class="w-full bg-blue-600 py-4 rounded-2xl text-white font-bold hover:bg-blue-700 shadow-xl shadow-blue-100 active:scale-95 transition-all">Vào Portal</button>
             </div>
           </div>
         </div>
 
         <!-- Header -->
-        <header id="app-header" class="hidden bg-white/80 backdrop-blur-md px-8 py-4 border-b flex items-center justify-between z-40">
+        <header id="app-header" class="hidden bg-white/80 backdrop-blur-md px-8 py-4 border-b flex items-center justify-between z-40 shadow-sm">
           <div class="flex items-center gap-4">
-            <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black" id="u-c">?</div>
+            <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black text-lg" id="u-c">?</div>
             <div>
               <div class="font-bold text-slate-900 text-sm leading-tight" id="u-n">---</div>
               <div class="text-[10px] font-bold text-blue-600 uppercase tracking-tighter" id="u-m">---</div>
@@ -114,64 +109,64 @@
           
           <div class="flex items-center gap-4">
             <div id="admin-date-filter" class="hidden bg-slate-100 p-1 rounded-lg flex items-center border">
-                <span class="text-[9px] font-extrabold px-3 text-slate-500">DỮ LIỆU NGÀY:</span>
+                <span class="text-[9px] font-extrabold px-3 text-slate-500 uppercase">Dữ liệu ngày:</span>
                 <input type="date" id="view-date" onchange="changeDate()" class="bg-white border-none rounded-md px-3 py-1.5 text-xs font-bold outline-none">
             </div>
 
             <div id="revenue-actions" class="hidden">
-              <button onclick="addRow()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-100">Thêm dòng kê khai</button>
+              <button onclick="addRow()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all active:scale-95">Thêm dòng kê khai</button>
             </div>
             
             <div id="personnel-actions" class="hidden">
-              <button onclick="syncEmployees()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700">Đồng bộ Sheets</button>
+              <button onclick="syncEmployees()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all">Đồng bộ Sheets</button>
             </div>
           </div>
         </header>
 
-        <!-- Main Dashboard (Portal Home) -->
+        <!-- Dashboard chính -->
         <main id="scr-home" class="hidden flex-1 p-10 overflow-auto bg-slate-50">
           <div class="max-w-5xl mx-auto">
-            <div class="mb-10">
-                <h2 class="text-3xl font-black text-slate-900 tracking-tight">Chào buổi sáng, <span id="u-fname" class="text-blue-600">...</span></h2>
-                <p class="text-slate-500 font-medium">Chào mừng bạn đến với trung tâm điều hành nội bộ.</p>
+            <div class="mb-12">
+                <h2 class="text-3xl font-black text-slate-900 tracking-tight">Xin chào, <span id="u-fname" class="text-blue-600">...</span> 👋</h2>
+                <p class="text-slate-500 font-medium mt-1">Chào mừng bạn quay lại hệ thống quản lý Portal.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <!-- Feature: Revenue -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <!-- Module: Doanh thu -->
               <div onclick="openFeature('REVENUE')" class="portal-card p-8 group">
-                <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all">💵</div>
-                <h3 class="font-bold text-lg mb-2">Doanh thu</h3>
-                <p class="text-xs text-slate-400 font-medium leading-relaxed">Phân hệ kê khai bảng tiền mặt và doanh thu dược hàng ngày của các nhóm.</p>
-                <div class="mt-6 flex items-center text-blue-600 font-bold text-[10px] uppercase tracking-widest">
-                    Bắt đầu làm việc ➜
+                <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">💵</div>
+                <h3 class="font-bold text-xl mb-2 text-slate-900">Kê khai Doanh thu</h3>
+                <p class="text-sm text-slate-400 font-medium leading-relaxed">Nhập bảng kê tiền mặt và doanh thu dược hàng ngày cho từng nhóm.</p>
+                <div class="mt-8 flex items-center text-blue-600 font-bold text-xs uppercase tracking-widest group-hover:translate-x-2 transition-transform">
+                    Truy cập ứng dụng ➜
                 </div>
               </div>
 
-              <!-- Feature: Personnel (Conditional) -->
+              <!-- Module: Nhân sự (Chỉ hiện cho Quản lý) -->
               <div id="card-personnel" onclick="openFeature('PERSONNEL')" class="hidden portal-card p-8 group">
-                <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all">👥</div>
-                <h3 class="font-bold text-lg mb-2">Nhân sự</h3>
-                <p class="text-xs text-slate-400 font-medium leading-relaxed">Quản lý danh sách nhân viên, phân quyền truy cập và đồng bộ dữ liệu từ hệ thống gốc.</p>
-                <div class="mt-6 flex items-center text-emerald-600 font-bold text-[10px] uppercase tracking-widest">
+                <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">👥</div>
+                <h3 class="font-bold text-xl mb-2 text-slate-900">Quản lý Nhân sự</h3>
+                <p class="text-sm text-slate-400 font-medium leading-relaxed">Cập nhật danh sách nhân viên, phân quyền và mật mã truy cập hệ thống.</p>
+                <div class="mt-8 flex items-center text-emerald-600 font-bold text-xs uppercase tracking-widest group-hover:translate-x-2 transition-transform">
                     Quản lý hệ thống ➜
                 </div>
               </div>
 
-              <!-- Future Feature Placeholder -->
-              <div class="portal-card p-8 border-dashed bg-slate-50 flex flex-col items-center justify-center text-center opacity-60">
-                <div class="text-2xl mb-2 text-slate-300">🔒</div>
-                <h3 class="font-bold text-slate-400">Ứng dụng sắp ra mắt</h3>
-                <p class="text-[10px] text-slate-300 uppercase font-bold tracking-tighter mt-1">Coming Soon</p>
+              <!-- Placeholder các app khác -->
+              <div class="portal-card p-8 border-dashed bg-slate-50/50 flex flex-col items-center justify-center text-center opacity-40">
+                <div class="text-3xl mb-4 text-slate-300">🔒</div>
+                <h3 class="font-bold text-slate-400">Tính năng sắp ra mắt</h3>
+                <p class="text-[10px] text-slate-300 uppercase font-black tracking-widest mt-2">Under Development</p>
               </div>
             </div>
           </div>
         </main>
 
-        <!-- Sub-Feature: Revenue -->
+        <!-- Module con: Doanh thu -->
         <main id="scr-revenue" class="hidden flex-1 p-6 fade-in">
-          <div class="flex items-center gap-2 mb-4">
-              <button onclick="goHome()" class="p-2 hover:bg-slate-200 rounded-lg text-sm">⬅</button>
-              <h2 class="font-black text-lg">BẢNG KÊ DOANH THU</h2>
+          <div class="flex items-center gap-3 mb-6">
+              <button onclick="goHome()" class="p-2 hover:bg-slate-200 rounded-xl transition-all font-bold text-slate-400 hover:text-slate-900">⬅ QUAY LẠI</button>
+              <h2 class="font-black text-xl text-slate-900 uppercase tracking-tighter">Bảng kê Doanh thu</h2>
           </div>
           <div class="grid-wrap">
             <table class="grid-table">
@@ -181,16 +176,16 @@
           </div>
         </main>
 
-        <!-- Sub-Feature: Personnel -->
+        <!-- Module con: Nhân sự -->
         <main id="scr-personnel" class="hidden flex-1 p-6 overflow-auto fade-in">
-          <div class="flex items-center gap-2 mb-4">
-              <button onclick="goHome()" class="p-2 hover:bg-slate-200 rounded-lg text-sm">⬅</button>
-              <h2 class="font-black text-lg">QUẢN LÝ NHÂN SỰ</h2>
+          <div class="flex items-center gap-3 mb-6">
+              <button onclick="goHome()" class="p-2 hover:bg-slate-200 rounded-xl transition-all font-bold text-slate-400 hover:text-slate-900">⬅ QUAY LẠI</button>
+              <h2 class="font-black text-xl text-slate-900 uppercase tracking-tighter">Danh sách Nhân sự</h2>
           </div>
           <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
             <table class="w-full text-left">
               <thead class="bg-slate-900 text-white text-[10px] uppercase font-bold sticky top-0">
-                <tr><th class="p-5">Mã NV</th><th class="p-5">Họ Tên</th><th class="p-5">Phòng / Nhóm</th><th class="p-5 text-center">Quyền</th></tr>
+                <tr><th class="p-5">Mã Nhân viên</th><th class="p-5">Họ & Tên</th><th class="p-5">Phòng / Nhóm</th><th class="p-5 text-center">Quyền</th></tr>
               </thead>
               <tbody id="body-per"></tbody>
             </table>
@@ -221,18 +216,18 @@
       {n:"Số Thẻ", k:"card", w:"120px"}, {n:"Số CK", k:"ck", w:"120px"}
     ];
 
-    function toggleLoader(s, t) { document.getElementById('loader-text').innerText = t || "Đang tải..."; document.getElementById('loader').style.display = s ? 'flex' : 'none'; }
+    function toggleLoader(s, t) { document.getElementById('loader-text').innerText = t || "Đang xử lý..."; document.getElementById('loader').style.display = s ? 'flex' : 'none'; }
     function showModal(t, m) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-msg').innerText = m; document.getElementById('custom-modal').style.display = 'flex'; }
     function closeModal() { document.getElementById('custom-modal').style.display = 'none'; }
     function notify(m, s) { 
-      const t = document.createElement('div'); t.className = `p-4 rounded-2xl shadow-xl border-l-4 ${s?'border-emerald-500 bg-white':'border-red-500 bg-white'} text-sm font-bold flex items-center gap-2`;
+      const t = document.createElement('div'); t.className = `p-4 rounded-2xl shadow-xl border-l-4 ${s?'border-emerald-500 bg-white':'border-red-500 bg-white'} text-sm font-bold flex items-center gap-2 fade-in`;
       t.innerHTML = `<span>${s?'✅':'❌'}</span><span>${m}</span>`;
       document.getElementById('toast-container').appendChild(t); setTimeout(()=>t.remove(), 3000);
     }
 
     async function doAuth() {
       const id = document.getElementById('a-id').value.trim(); if(!id) return;
-      toggleLoader(true, "Đang định danh...");
+      toggleLoader(true, "Đang xác thực quyền truy cập...");
       try {
         const snap = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('employees').get();
         const rawData = snap.docs.map(d => d.data());
@@ -242,7 +237,7 @@
 
         const found = allEmps.find(e => e.employeeId === id || e.employeeId.endsWith('.' + id));
         if (step === 1) {
-          toggleLoader(false); if (!found) return showModal('Lỗi', 'Mã nhân viên không có quyền truy cập Portal.');
+          toggleLoader(false); if (!found) return showModal('Truy cập bị từ chối', 'Mã nhân viên này chưa được cấp quyền sử dụng Portal.');
           ud = found; document.getElementById('a-id').value = found.employeeId;
           document.getElementById('a-id').setAttribute('readonly', true);
           document.getElementById('a-p-box').classList.remove('hidden'); step = 2; document.getElementById('a-p').focus();
@@ -251,9 +246,9 @@
             await auth.signInAnonymously();
             document.getElementById('emp-list').innerHTML = allEmps.map(e => `<option value="${e.employeeId} - ${e.fullName}">`).join('');
             startApp();
-          } else { toggleLoader(false); notify('Sai mật mã xác thực', false); }
+          } else { toggleLoader(false); notify('Mật mã không đúng', false); }
         }
-      } catch (e) { toggleLoader(false); showModal('Lỗi hệ thống', 'Không thể kết nối đến Portal.'); }
+      } catch (e) { toggleLoader(false); showModal('Lỗi hệ thống', 'Không thể kết nối máy chủ Portal.'); }
     }
 
     function startApp() {
